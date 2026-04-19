@@ -1,1 +1,1 @@
-{"liveGames":[],"newsUpdate":""}
+{"games":[{"awayTeam":{"abbrev":"OTT","score":0},"homeTeam":{"abbrev":"CAR","score":2},"gameState":"FINAL","clock":{"timeRemaining":"0:00"},"period":3,"startTimeUTC":"2026-04-18T19:00Z"},{"awayTeam":{"abbrev":"MIN","score":6},"homeTeam":{"abbrev":"DAL","score":1},"gameState":"FINAL","clock":{"timeRemaining":"0:00"},"period":3,"startTimeUTC":"2026-04-18T21:30Z"},{"awayTeam":{"abbrev":"PHI","score":3},"homeTeam":{"abbrev":"PIT","score":2},"gameState":"FINAL","clock":{"timeRemaining":"0:00"},"period":3,"startTimeUTC":"2026-04-19T00:00Z"}]}

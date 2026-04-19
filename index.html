@@ -796,9 +796,8 @@ function renderChart(){
 
 async function loadNHL(){
   var container=document.getElementById("gscroll");
-  var today=new Date().toISOString().split("T")[0];
   try{
-    var res=await fetch("https://api-web.nhle.com/v1/score/"+today);
+    var res=await fetch("json/live.games.json?t="+Date.now());
     var data=await res.json();
     var games=data.games||[];
     if(!games.length){
