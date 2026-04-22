@@ -292,6 +292,24 @@ img{display:block}
   .award-name{font-size:13px}
   .award-pts{font-size:11px}
 }
+
+/* sparkline */
+.spark{display:block;margin-top:3px}
+
+/* 3D tilt */
+.hcard,.tcard,.award{will-change:transform}
+
+/* live dot on Ce Soir tab */
+.nb-live{position:relative;padding-right:22px}
+.nb-live::after{content:"";position:absolute;top:5px;right:6px;width:7px;height:7px;
+  border-radius:50%;background:var(--red);animation:ldot 1.2s ease-in-out infinite}
+@keyframes ldot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.65)}}
+
+/* live score chip pulse */
+.score-chip.is-live{animation:cpulse 1.5s ease-in-out infinite;
+  border-color:rgba(220,38,38,.5);box-shadow:0 0 0 0 rgba(220,38,38,.35)}
+@keyframes cpulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.35)}
+  50%{box-shadow:0 0 0 7px rgba(220,38,38,0)}}
 </style>
 </head>
 <body>
@@ -627,6 +645,26 @@ function renderPodium(){
   }).join("");
 }
 
+function buildSparkline(poolerName){
+  var entry=(SD||[]).find(function(s){
+    return s.teamOwner&&s.teamOwner.split(" ")[0]===poolerName;
+  });
+  if(!entry||!entry.pointsPerDay||entry.pointsPerDay.length<4) return "";
+  var pts=entry.pointsPerDay.slice(-30);
+  var mn=Math.min.apply(null,pts),mx=Math.max.apply(null,pts);
+  if(mx===mn) return "";
+  var W=64,H=16,n=pts.length;
+  var coords=pts.map(function(v,i){
+    return (i/(n-1)*W).toFixed(1)+","+(H-((v-mn)/(mx-mn)*(H-2))-1).toFixed(1);
+  }).join(" ");
+  var a=pts[n-1]-pts[Math.max(0,n-11)];
+  var b=pts[Math.max(0,n-11)]-pts[Math.max(0,n-21)];
+  var col=a>=b?"#16a34a":"#f59e0b";
+  return '<svg class="spark" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'">'
+    +'<polyline points="'+coords+'" fill="none" stroke="'+col+'" stroke-width="1.5"'
+    +' stroke-linecap="round" stroke-linejoin="round"/></svg>';
+}
+
 function renderStandings(){
   var medals=["\uD83E\uDD47","\uD83E\uDD48","\uD83E\uDD49"];
   document.getElementById("standings-body").innerHTML = (LD.leaders||[]).map(function(p,i){
@@ -640,6 +678,7 @@ function renderStandings(){
       +"<div style=\"min-width:0\">"
       +"<div class=\"pname\">"+p.teamUserName+"</div>"
       +"<div class=\"pteamname\">"+p.teamName+"</div>"
+      +buildSparkline(p.teamUserName)
       +"</div></div>"
       +"<span class=\"td pts\">"+p.points+"</span>"
       +"<span class=\"td\">"+p.goals+"</span>"
@@ -822,7 +861,7 @@ async function loadNHL(){
       var sCls=isLive?"sb-live":isFinal?"sb-final":"sb-pre";
       var pool=(POOL_BY_TEAM[away]||[]).concat(POOL_BY_TEAM[home]||[]);
       var hp=pool.length>0;
-      var chipCls="score-chip"+(hp?" hp":"");
+      var chipCls="score-chip"+(hp?" hp":"")+(isLive?" is-live":"");
       var out="<div class=\""+chipCls+"\">";
       out+="<span class=\"score-teams\">"+away+" @ "+home+"</span>";
       if(isLive||isFinal) out+="<span class=\"score-num\">"+as+"-"+hs+"</span>";
@@ -834,9 +873,13 @@ async function loadNHL(){
       return out;
     }).join("");
     document.getElementById("live-badge").style.display=hasLive?"":"none";
+    var _tab=document.querySelector('.nb[onclick*="tonight"]');
+    if(_tab) _tab.classList.toggle("nb-live",hasLive);
     renderTonightList(games);
   }catch(e){
     container.innerHTML="<span style=\"color:rgba(255,255,255,.3);font-size:12px\">NHL API indisponible</span>";
+    var _tab=document.querySelector('.nb[onclick*="tonight"]');
+    if(_tab) _tab.classList.remove("nb-live");
   }
 }
 
@@ -888,6 +931,25 @@ function renderTradeRules(){
 renderAll();
 loadNHL();
 setInterval(loadNHL,60000);
+(function(){
+  var MAX=8,PX=600;
+  document.body.addEventListener("mousemove",function(e){
+    var c=e.target.closest(".hcard,.tcard,.award");
+    if(!c) return;
+    var r=c.getBoundingClientRect();
+    var dx=(e.clientX-(r.left+r.width/2))/r.width;
+    var dy=(e.clientY-(r.top+r.height/2))/r.height;
+    c.style.transition="transform .08s ease";
+    c.style.transform="perspective("+PX+"px) rotateX("+(-dy*MAX)+"deg) rotateY("+(dx*MAX)+"deg)";
+  });
+  document.body.addEventListener("mouseout",function(e){
+    var c=e.target.closest(".hcard,.tcard,.award");
+    if(c&&!c.contains(e.relatedTarget)){
+      c.style.transition="transform .3s ease";
+      c.style.transform="";
+    }
+  });
+})();
 (function(){
   var fmt=function(d){return d.toLocaleDateString("fr-CA",{year:"numeric",month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"});};
   document.getElementById("code-updated").textContent=fmt(new Date(document.lastModified));
