@@ -310,6 +310,73 @@ img{display:block}
   border-color:rgba(220,38,38,.5);box-shadow:0 0 0 0 rgba(220,38,38,.35)}
 @keyframes cpulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.35)}
   50%{box-shadow:0 0 0 7px rgba(220,38,38,0)}}
+
+/* tab fade transition */
+.section.on{animation:secIn .2s ease both}
+@keyframes secIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* hero carousel dots */
+.hero-dots{display:none}
+
+/* expandable standings rows */
+.tr-exp{max-height:0;overflow:hidden;transition:max-height .28s ease;
+  background:rgba(26,86,219,.03);border-bottom:1px solid var(--border)}
+.tr-exp.open{max-height:100px}
+.tr-exp-inner{display:flex;padding:10px 20px 4px;justify-content:space-around}
+.tr-exp-stat{display:flex;flex-direction:column;align-items:center;
+  font-size:15px;font-weight:700;color:var(--text1)}
+.tr-exp-lbl{font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;margin-bottom:2px}
+.tr-exp-btn{display:block;margin:2px auto 10px;font-size:12px;font-weight:600;
+  color:var(--blue);background:none;cursor:pointer;padding:4px 14px;
+  border:1px solid rgba(26,86,219,.25);border-radius:20px}
+.tr.exp-open{background:rgba(26,86,219,.06)}
+@media(min-width:641px){.tr-exp{display:none}}
+
+/* scroll-snap awards */
+.awards{scroll-snap-type:x mandatory}
+.award{scroll-snap-align:start}
+
+/* edge-fade wrappers */
+.scores-wrap,.awards-wrap{position:relative}
+.scores-wrap::after,.awards-wrap::after{
+  content:"";position:absolute;top:0;right:0;bottom:0;width:48px;pointer-events:none;
+  background:linear-gradient(to right,transparent,rgba(235,238,245,.95))}
+
+/* bottom nav */
+.bnav{display:none}
+
+@media(max-width:640px){
+  .nav-wrap{display:none}
+  .app{padding-bottom:76px}
+  .bnav{
+    display:flex;position:fixed;bottom:0;left:0;right:0;z-index:200;
+    background:rgba(255,255,255,0.82);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    border-top:1px solid rgba(255,255,255,0.6);
+    padding:8px 0 max(8px,env(safe-area-inset-bottom));
+    box-shadow:0 -4px 20px rgba(0,0,0,.08)}
+  .bnt{
+    flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
+    background:none;border:none;padding:4px 0;cursor:pointer;
+    color:var(--text3);transition:color .15s}
+  .bnt.on{color:var(--blue)}
+  .bnt:active{transform:scale(.88);transition:transform .08s ease}
+  .bnt-icon{font-size:20px;line-height:1;position:relative;display:inline-block}
+  .bnt-lbl{font-size:9px;font-weight:600;letter-spacing:.02em;text-transform:uppercase}
+  .bnt.nb-live .bnt-icon::after{content:"";position:absolute;top:0;right:-2px;
+    width:6px;height:6px;border-radius:50%;background:var(--red);
+    animation:ldot 1.2s ease-in-out infinite}
+  .hero{
+    display:flex;overflow-x:auto;scroll-snap-type:x mandatory;
+    -webkit-overflow-scrolling:touch;scrollbar-width:none;
+    gap:10px;padding:0 4px 4px;margin-top:16px}
+  .hero::-webkit-scrollbar{display:none}
+  .hcard{scroll-snap-align:start;flex:0 0 calc(50% - 5px);min-width:0}
+  .hero-dots{display:flex;justify-content:center;gap:5px;margin-top:6px}
+  .hero-dot{width:5px;height:5px;border-radius:50%;background:rgba(26,86,219,.18);transition:background .2s}
+  .hero-dot.on{background:var(--blue)}
+  .tr:active,.tcard:active,.award:active,.hcard:active{
+    transform:scale(.97);transition:transform .08s ease}
+}
 </style>
 </head>
 <body>
@@ -341,18 +408,18 @@ img{display:block}
 </div>
 
 <div class="app">
-  <div class="scores">
+  <div class="scores-wrap"><div class="scores">
     <span class="scores-lbl"><span class="scores-ldot"></span> Scores</span>
     <div id="gscroll" style="display:flex;gap:10px;overflow-x:auto;flex:1;scrollbar-width:none">
       <span style="color:rgba(255,255,255,.3);font-size:12px">Chargement...</span>
     </div>
     <span class="sbadge sb-live" id="live-badge" style="flex-shrink:0">LIVE</span>
     <button class="scores-refresh" onclick="loadNHL()">&#8635;</button>
-  </div>
+  </div></div>
 
   <div class="section on spad" id="sec-standings">
     <div class="hero" id="hero-strip"></div>
-    <div class="awards" id="awards"></div>
+    <div class="awards-wrap"><div class="awards" id="awards"></div></div>
     <div class="podium" id="podium"></div>
     <div class="tbl-wrap">
       <div class="tbl-head">
@@ -579,6 +646,17 @@ function nav(id,btn){
   if(id==="chart") renderChart();
 }
 
+function bnav(id,btn){
+  var topBtn=document.querySelector('.nb[onclick*="\''+id+'\'"]');
+  nav(id,topBtn||btn);
+  document.querySelectorAll(".bnt").forEach(function(b){b.classList.remove("on");});
+  btn.classList.add("on");
+  if(id==="tonight"){
+    var top=document.querySelector('.nb[onclick*="tonight"]');
+    if(top&&top.classList.contains("nb-live")) btn.classList.add("nb-live");
+  }
+}
+
 function renderAll(){
   renderHero(); renderStrips(); renderPodium();
   renderStandings(); renderTeams(); renderTradeRules();
@@ -672,7 +750,7 @@ function renderStandings(){
     var logo=imgOrFb("img/"+p.userLogo,p.teamUserName,"av","av-fb",av[0],av[1]);
     var dc=p.pointsDiff>0?"td up":p.pointsDiff===0?"td zr":"td dn";
     var diff=p.pointsDiff>0?"+"+p.pointsDiff:p.pointsDiff===0?"--":p.pointsDiff;
-    return "<div class=\"tr"+(i===0?" top1":"")+"\" data-pooler=\""+p.teamUserName+"\" onclick=\"openTeam(this)\">"
+    return "<div class=\"tr"+(i===0?" top1":"")+"\" data-pooler=\""+p.teamUserName+"\" onclick=\"tapRow(this)\">"
       +"<span class=\"rank\">"+(i<3?medals[i]:(i+1))+"</span>"
       +"<div class=\"pcell\"><div style=\"display:flex;flex-shrink:0\">"+logo+"</div>"
       +"<div style=\"min-width:0\">"
@@ -686,8 +764,28 @@ function renderStandings(){
       +"<span class=\"td\">"+p.goaliesWins+"</span>"
       +"<span class=\"td\">"+p.goaliesShutOuts+"</span>"
       +"<span class=\""+dc+"\">"+diff+"</span>"
+      +"</div>"
+      +"<div class=\"tr-exp\" id=\"trx-"+p.teamUserName+"\">"
+      +"<div class=\"tr-exp-inner\">"
+      +"<span class=\"tr-exp-stat\"><span class=\"tr-exp-lbl\">🎯 Buts</span>"+p.goals+"</span>"
+      +"<span class=\"tr-exp-stat\"><span class=\"tr-exp-lbl\">🍎 Passes</span>"+p.passes+"</span>"
+      +"<span class=\"tr-exp-stat\"><span class=\"tr-exp-lbl\">🧤 Vict.</span>"+p.goaliesWins+"</span>"
+      +"<span class=\"tr-exp-stat\"><span class=\"tr-exp-lbl\">🔒 BL</span>"+p.goaliesShutOuts+"</span>"
+      +"</div>"
+      +"<button class=\"tr-exp-btn\" onclick=\"event.stopPropagation();openTeam(document.querySelector('[data-pooler=&quot;"+p.teamUserName+"&quot;]'))\">Voir équipe →</button>"
       +"</div>";
   }).join("");
+}
+
+function tapRow(el){
+  var name=el.dataset.pooler;
+  var exp=document.getElementById("trx-"+name);
+  if(!exp||window.innerWidth>640){openTeam(el);return;}
+  document.querySelectorAll(".tr-exp.open").forEach(function(x){
+    if(x!==exp){x.classList.remove("open");x.previousElementSibling.classList.remove("exp-open");}
+  });
+  exp.classList.toggle("open");
+  el.classList.toggle("exp-open");
 }
 
 function filterTeams(type,btn){
@@ -875,11 +973,15 @@ async function loadNHL(){
     document.getElementById("live-badge").style.display=hasLive?"":"none";
     var _tab=document.querySelector('.nb[onclick*="tonight"]');
     if(_tab) _tab.classList.toggle("nb-live",hasLive);
+    var _bnt=document.querySelector('.bnt[onclick*="tonight"]');
+    if(_bnt) _bnt.classList.toggle("nb-live",hasLive);
     renderTonightList(games);
   }catch(e){
     container.innerHTML="<span style=\"color:rgba(255,255,255,.3);font-size:12px\">NHL API indisponible</span>";
     var _tab=document.querySelector('.nb[onclick*="tonight"]');
     if(_tab) _tab.classList.remove("nb-live");
+    var _bnt=document.querySelector('.bnt[onclick*="tonight"]');
+    if(_bnt) _bnt.classList.remove("nb-live");
   }
 }
 
@@ -929,6 +1031,24 @@ function renderTradeRules(){
 }
 
 renderAll();
+(function(){
+  var hero=document.getElementById("hero-strip");
+  if(!hero) return;
+  var dots=document.createElement("div");
+  dots.className="hero-dots";
+  var cards=hero.querySelectorAll(".hcard");
+  for(var i=0;i<cards.length;i++){
+    var d=document.createElement("span");
+    d.className="hero-dot"+(i===0?" on":"");
+    dots.appendChild(d);
+  }
+  hero.parentNode.insertBefore(dots,hero.nextSibling);
+  hero.addEventListener("scroll",function(){
+    var cw=hero.firstElementChild?hero.firstElementChild.offsetWidth+10:hero.offsetWidth/2;
+    var idx=Math.round(hero.scrollLeft/cw);
+    dots.querySelectorAll(".hero-dot").forEach(function(d,i){d.classList.toggle("on",i===idx);});
+  });
+})();
 loadNHL();
 setInterval(loadNHL,60000);
 (function(){
@@ -959,5 +1079,22 @@ setInterval(loadNHL,60000);
   }).catch(function(){});
 })();
 </script>
+<nav class="bnav" id="bnav">
+  <button class="bnt on" onclick="bnav('standings',this)">
+    <span class="bnt-icon">🏆</span><span class="bnt-lbl">Classement</span>
+  </button>
+  <button class="bnt" onclick="bnav('teams',this)">
+    <span class="bnt-icon">🧊</span><span class="bnt-lbl">Équipes</span>
+  </button>
+  <button class="bnt" onclick="bnav('chart',this)">
+    <span class="bnt-icon">📈</span><span class="bnt-lbl">Trajectoire</span>
+  </button>
+  <button class="bnt" onclick="bnav('tonight',this)">
+    <span class="bnt-icon">🎮</span><span class="bnt-lbl">Ce soir</span>
+  </button>
+  <button class="bnt" onclick="bnav('trade',this)">
+    <span class="bnt-icon">🔄</span><span class="bnt-lbl">Échanges</span>
+  </button>
+</nav>
 </body>
 </html>
